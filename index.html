@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego de Memoria</title>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(45deg, #1e3c72, #2a5298);
+            color: #2c3e50;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            animation: gradientAnimation 5s ease infinite;
+        }
+
+        @keyframes gradientAnimation {
+            0% { background: linear-gradient(45deg, #1e3c72, #2a5298); }
+            50% { background: linear-gradient(45deg, #2980b9, #8e44ad); }
+            100% { background: linear-gradient(45deg, #1e3c72, #2a5298); }
+        }
+
+        h1 {
+            margin: 0;
+            color: #000000; /* Cambié el color de la palabra 'Estadísticas' a negro */
+            text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.3);
+            font-size: 32px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .game-container {
+            display: flex;
+            flex-direction: row;
+            gap: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .stats-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+            color: #000000; /* Cambié el color de las estadísticas a negro */
+            font-size: 18px;
+        }
+
+        .stats-container p {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: repeat(4, 120px);
+            gap: 20px;
+        }
+
+        .card {
+            width: 120px;
+            height: 120px;
+            background-color: #1abc9c;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            cursor: pointer;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: scale(1.1);
+            background-color: #16a085;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .card.matched {
+            background-color: #27ae60;
+            pointer-events: none;
+        }
+
+        .hidden {
+            background-color: #34495e;
+            color: transparent;
+        }
+
+        .button {
+            padding: 12px 30px;
+            font-size: 18px;
+            color: #ffffff;
+            background-color: #e74c3c;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .button:hover {
+            background-color: #c0392b;
+            transform: scale(1.05);
+        }
+
+        .message {
+            display: none;
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 20px;
+            background-color: #f39c12; /* Cambié el color de fondo del mensaje a amarillo */
+            color: #ffffff;
+            font-size: 22px;
+            border-radius: 10px;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            width: 80%;
+            max-width: 600px;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="container" id="game-board"></div>
+        <div class="stats-container">
+            <h1>Estadísticas</h1> <!-- Aquí ya es negro -->
+            <p>Aciertos: <span id="matches">0</span></p>
+            <p>Movimientos: <span id="moves">0</span></p>
+            <p>Tiempo restante: <span id="time">60</span> segundos</p>
+            <button class="button" onclick="startGame()">Reiniciar Juego</button>
+        </div>
+    </div>
+    <div class="message" id="message"></div>
+
+    <script>
+        const board = document.getElementById('game-board');
+        const matchesDisplay = document.getElementById('matches');
+        const movesDisplay = document.getElementById('moves');
+        const timeDisplay = document.getElementById('time');
+        const messageDisplay = document.getElementById('message');
+
+        let cards = [];
+        let firstCard = null;
+        let secondCard = null;
+        let matches = 0;
+        let moves = 0;
+        let time = 60;
+        let timer;
+
+        function startGame() {
+            messageDisplay.classList.remove('show');
+            const numbers = [...Array(8).keys(), ...Array(8).keys()];
+            cards = numbers.sort(() => Math.random() - 0.5);
+            board.innerHTML = '';
+            matches = 0;
+            moves = 0;
+            time = 60;
+            firstCard = null;
+            secondCard = null;
+
+            cards.forEach((number, index) => {
+                const card = document.createElement('div');
+                card.classList.add('card');
+                card.dataset.value = number;
+                card.dataset.index = index;
+                card.textContent = number;
+                board.appendChild(card);
+            });
+
+            matchesDisplay.textContent = matches;
+            movesDisplay.textContent = moves;
+            timeDisplay.textContent = time;
+
+            setTimeout(() => {
+                document.querySelectorAll('.card').forEach(card => {
+                    card.classList.add('hidden');
+                    card.textContent = '';
+                    card.addEventListener('click', () => flipCard(card));
+                });
+
+                clearInterval(timer);
+                timer = setInterval(() => {
+                    time--;
+                    timeDisplay.textContent = time;
+
+                    if (time === 0) {
+                        clearInterval(timer);
+                        showMessage(`¡Tiempo terminado! Aciertos: ${matches}, Movimientos: ${moves}`);
+                    }
+                }, 1000);
+            }, 5000);
+        }
+
+        function flipCard(card) {
+            if (!card.classList.contains('hidden') || secondCard) return;
+
+            card.classList.remove('hidden');
+            card.textContent = card.dataset.value;
+
+            if (!firstCard) {
+                firstCard = card;
+            } else {
+                secondCard = card;
+                moves++;
+                movesDisplay.textContent = moves;
+
+                if (firstCard.dataset.value === secondCard.dataset.value) {
+                    firstCard.classList.add('matched');
+                    secondCard.classList.add('matched');
+                    matches++;
+                    matchesDisplay.textContent = matches;
+
+                    firstCard = null;
+                    secondCard = null;
+
+                    if (matches === cards.length / 2) {
+                        clearInterval(timer);
+                        showMessage(`¡Felicidades! Completaste el juego con ${moves} movimientos y ${time} segundos restantes.`);
+                    }
+                } else {
+                    setTimeout(() => {
+                        firstCard.classList.add('hidden');
+                        secondCard.classList.add('hidden');
+                        firstCard.textContent = '';
+                        secondCard.textContent = '';
+
+                        firstCard = null;
+                        secondCard = null;
+                    }, 1000);
+                }
+            }
+        }
+
+        function showMessage(message) {
+            messageDisplay.textContent = message;
+            messageDisplay.classList.add('show');
+        }
+
+        startGame();
+    </script>
+</body>
+</html>
